@@ -3,7 +3,7 @@ http_server:
   address: "localhost:8090"
   timeout: 4s
   idle_timeout: 60s
-database:
+database: #TODO move this to ENV
   host: "localhost"
   port: "5432"
   user: "postgres"

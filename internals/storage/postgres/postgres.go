@@ -5,17 +5,11 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"user-api-service/internals/config"
+	"user-api-service/internals/models"
 )
 
 type Storage struct {
 	db *pgx.Conn
-}
-
-type User struct {
-	FirstName string
-	LastName  string
-	Email     string
-	Age       uint
 }
 
 func Connect(cfg config.Database) (*Storage, error) {
@@ -24,9 +18,17 @@ func Connect(cfg config.Database) (*Storage, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
+
+	//TODO move it to dockerFile
+	instalExtentioneQuery := `CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`
+	_, err = db.Exec(context.Background(), instalExtentioneQuery)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
 	createTableQuery := `
 		CREATE TABLE IF NOT EXISTS users (
-			id UUID PRIMARY KEY,
+			id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
 			firstname TEXT NOT NULL,
 			lastname TEXT NOT NULL,
 			email TEXT UNIQUE NOT NULL,
@@ -42,7 +44,7 @@ func Connect(cfg config.Database) (*Storage, error) {
 	return &Storage{db: db}, nil
 }
 
-func (s *Storage) SaveUser(user User) (string, error) {
+func (s *Storage) SaveUser(user models.User) (string, error) {
 	const op = "storage.postgres.SaveUser"
 
 	createUserQuery := `
@@ -67,14 +69,14 @@ func (s *Storage) SaveUser(user User) (string, error) {
 	return id, nil
 }
 
-func (s *Storage) GetUser(id string) (*User, error) {
+func (s *Storage) GetUser(id string) (*models.User, error) {
 	const op = "storage.postgres.GetUser"
 	getUserQuery := `SELECT * FROM users WHERE id = $1`
 	_, err := s.db.Prepare(context.Background(), "getUser", getUserQuery)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
-	var user User
+	var user models.User
 	err = s.db.QueryRow(context.Background(), "getUser", id).Scan(&user.FirstName, &user.LastName, &user.Email, &user.Age)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -82,7 +84,7 @@ func (s *Storage) GetUser(id string) (*User, error) {
 	return &user, nil
 }
 
-func (s *Storage) UpdateUser(user User, id string) error {
+func (s *Storage) UpdateUser(user models.User, id string) error {
 	const op = "storage.postgres.UpdateUser"
 	updateUserQuery := `UPDATE users
 		SET firstname = $1, lastname = $2, email = $3, age = $4

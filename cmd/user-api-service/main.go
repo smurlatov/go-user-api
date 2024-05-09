@@ -8,7 +8,9 @@ import (
 	"net/http"
 	"os"
 	"user-api-service/internals/config"
+	"user-api-service/internals/http-server/handlers/user/get"
 	"user-api-service/internals/http-server/handlers/user/save"
+	"user-api-service/internals/http-server/handlers/user/update"
 	"user-api-service/internals/storage/postgres"
 )
 
@@ -36,7 +38,9 @@ func main() {
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.URLFormat)
 
-	router.Post("/create-user", save.New(log, db))
+	router.Post("/users", save.New(log, db))
+	router.Get("/user/{id}", get.New(log, db))
+	router.Patch("/user/{id}", update.New(log, db))
 
 	//TODO init server
 

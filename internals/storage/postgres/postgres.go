@@ -71,7 +71,7 @@ func (s *Storage) SaveUser(user models.User) (string, error) {
 
 func (s *Storage) GetUser(id string) (*models.User, error) {
 	const op = "storage.postgres.GetUser"
-	getUserQuery := `SELECT * FROM users WHERE id = $1`
+	getUserQuery := `SELECT firstname,lastname,email,age FROM users WHERE id = $1`
 	_, err := s.db.Prepare(context.Background(), "getUser", getUserQuery)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -94,7 +94,7 @@ func (s *Storage) UpdateUser(user models.User, id string) error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	err = s.db.QueryRow(context.Background(), "updateUser", user.FirstName, user.LastName, user.Email, user.Age, id).Scan()
+	_, err = s.db.Exec(context.Background(), "updateUser", user.FirstName, user.LastName, user.Email, user.Age, id)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}

@@ -9,6 +9,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	resp "user-api-service/internals/lib/api/responce"
 	"user-api-service/internals/models"
 )
 
@@ -20,10 +21,11 @@ type Request struct {
 }
 
 type Response struct {
-	Status uint   `json:"status"`
-	Error  string `json:"error,omitempty"`
+	resp.Response
+	Error string `json:"error,omitempty"`
 }
 
+//go:generate go run github.com/vektra/mockery/v2@latest --name=UserUpdater
 type UserUpdater interface {
 	UpdateUser(user models.User, id string) error
 }
@@ -51,7 +53,7 @@ func New(log *slog.Logger, storage UserUpdater) http.HandlerFunc {
 		if err != nil {
 			log.Error("failed to decode request body", err)
 
-			render.JSON(w, r, "failed to decode request")
+			render.JSON(w, r, resp.Error("failed to decode request"))
 
 			return
 		}
@@ -62,18 +64,23 @@ func New(log *slog.Logger, storage UserUpdater) http.HandlerFunc {
 
 			log.Error("invalid request", err)
 
-			for _, err := range err.(validator.ValidationErrors) {
-				log.Error("Validation error: Field '%s', Tag '%s'", err.Field(), err.Tag())
-			}
-
-			render.JSON(w, r, "invalid request")
+			render.JSON(w, r, resp.ValidationError(err.(validator.ValidationErrors)))
 
 			return
 		}
 
 		id := chi.URLParam(r, "id")
 
-		//TODO make it clenear
+		if err := validator.New(validator.WithRequiredStructEnabled()).Var(id, "uuid"); err != nil {
+
+			log.Error("id validation error ", err)
+
+			render.JSON(w, r, resp.Error("invalid uuid"))
+
+			return
+		}
+
+		//TODO make it cleaner
 		user := models.User{
 			FirstName: req.FirstName,
 			LastName:  req.LastName,
@@ -85,7 +92,7 @@ func New(log *slog.Logger, storage UserUpdater) http.HandlerFunc {
 		if err != nil {
 			log.Error("failed to update user", err)
 
-			render.JSON(w, r, "failed to update user")
+			render.JSON(w, r, resp.Error("failed to update user"))
 
 			return
 		}
@@ -98,6 +105,6 @@ func New(log *slog.Logger, storage UserUpdater) http.HandlerFunc {
 
 func responseOK(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, Response{
-		Status: http.StatusOK,
+		Response: resp.OK(),
 	})
 }

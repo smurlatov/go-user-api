@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"log/slog"
@@ -29,9 +28,7 @@ func main() {
 	}
 	defer db.Close()
 
-	fmt.Println(cfg.Database)
-	_, _ = db, err
-
+	// init router
 	router := chi.NewRouter()
 	router.Use(middleware.RequestID)
 	router.Use(middleware.Logger)
@@ -42,8 +39,7 @@ func main() {
 	router.Get("/user/{id}", get.New(log, db))
 	router.Patch("/user/{id}", update.New(log, db))
 
-	//TODO init server
-
+	// init server
 	srv := &http.Server{
 		Addr:         cfg.Address,
 		Handler:      router,

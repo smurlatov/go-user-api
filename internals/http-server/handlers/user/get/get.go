@@ -7,17 +7,18 @@ import (
 	"github.com/go-playground/validator/v10"
 	"log/slog"
 	"net/http"
+	resp "user-api-service/internals/lib/api/responce"
 	"user-api-service/internals/models"
 )
 
 type Response struct {
-	Status uint        `json:"status"`
-	Error  string      `json:"error,omitempty"`
-	User   models.User `json:"user" validate:"required"`
+	resp.Response
+	User models.User `json:"user" validate:"required"`
 }
 
+//go:generate go run github.com/vektra/mockery/v2@latest --name=UserGetter
 type UserGetter interface {
-	GetUser(id string) (*models.User, error)
+	GetUser(id string) (models.User, error)
 }
 
 func New(log *slog.Logger, storage UserGetter) http.HandlerFunc {
@@ -31,17 +32,13 @@ func New(log *slog.Logger, storage UserGetter) http.HandlerFunc {
 
 		id := chi.URLParam(r, "id")
 
-		log.Info("get uuid from reques", slog.String("id", id))
+		log.Info("get uuid from request", slog.String("id", id))
 
 		if err := validator.New(validator.WithRequiredStructEnabled()).Var(id, "uuid"); err != nil {
 
-			log.Error("invalid request", err)
+			log.Error("invalid uuid", err)
 
-			for _, err := range err.(validator.ValidationErrors) {
-				log.Error("Validation error: Field '%s', Tag '%s'", err.Field(), err.Tag())
-			}
-
-			render.JSON(w, r, "invalid request")
+			render.JSON(w, r, resp.Error("invalid uuid"))
 
 			return
 		}
@@ -51,8 +48,7 @@ func New(log *slog.Logger, storage UserGetter) http.HandlerFunc {
 		if err != nil {
 			log.Error("failed to get user", err)
 
-			render.JSON(w, r, "failed to get user")
-
+			render.JSON(w, r, resp.Error("failed to get user"))
 			return
 		}
 
@@ -62,9 +58,9 @@ func New(log *slog.Logger, storage UserGetter) http.HandlerFunc {
 	}
 }
 
-func responseOK(w http.ResponseWriter, r *http.Request, user *models.User) {
+func responseOK(w http.ResponseWriter, r *http.Request, user models.User) {
 	render.JSON(w, r, Response{
-		Status: http.StatusOK,
-		User:   *user,
+		Response: resp.OK(),
+		User:     user,
 	})
 }

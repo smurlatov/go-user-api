@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	resp "user-api-service/internals/lib/api/responce"
 	"user-api-service/internals/models"
 )
 
@@ -19,11 +20,11 @@ type Request struct {
 }
 
 type Response struct {
-	Status uint   `json:"status"`
-	Error  string `json:"error,omitempty"`
-	Id     string `json:"id" validate:"required, uuid"`
+	resp.Response
+	Id string `json:"id" validate:"required, uuid"`
 }
 
+//go:generate go run github.com/vektra/mockery/v2@latest --name=UserSaver
 type UserSaver interface {
 	SaveUser(user models.User) (string, error)
 }
@@ -44,14 +45,14 @@ func New(log *slog.Logger, storage UserSaver) http.HandlerFunc {
 		if errors.Is(err, io.EOF) {
 			log.Error("request body is empty")
 
-			render.JSON(w, r, "empty request")
+			render.JSON(w, r, resp.Error("request body is empty"))
 
 			return
 		}
 		if err != nil {
 			log.Error("failed to decode request body", err)
 
-			render.JSON(w, r, "failed to decode request")
+			render.JSON(w, r, resp.Error("failed to decode request"))
 
 			return
 		}
@@ -62,16 +63,11 @@ func New(log *slog.Logger, storage UserSaver) http.HandlerFunc {
 
 			log.Error("invalid request", err)
 
-			for _, err := range err.(validator.ValidationErrors) {
-				log.Error("Validation error: Field '%s', Tag '%s'", err.Field(), err.Tag())
-			}
-
-			render.JSON(w, r, "invalid request")
+			render.JSON(w, r, resp.ValidationError(err.(validator.ValidationErrors)))
 
 			return
 		}
 
-		//TODO make it clenear
 		user := models.User{
 			FirstName: req.FirstName,
 			LastName:  req.LastName,
@@ -83,7 +79,7 @@ func New(log *slog.Logger, storage UserSaver) http.HandlerFunc {
 		if err != nil {
 			log.Error("failed to save user", err)
 
-			render.JSON(w, r, "failed to save user")
+			render.JSON(w, r, resp.Error("failed to save user"))
 
 			return
 		}
@@ -96,7 +92,7 @@ func New(log *slog.Logger, storage UserSaver) http.HandlerFunc {
 
 func responseOK(w http.ResponseWriter, r *http.Request, id string) {
 	render.JSON(w, r, Response{
-		Status: http.StatusOK,
-		Id:     id,
+		Response: resp.OK(),
+		Id:       id,
 	})
 }

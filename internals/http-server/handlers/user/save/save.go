@@ -50,7 +50,7 @@ func New(log *slog.Logger, storage UserSaver) http.HandlerFunc {
 			return
 		}
 		if err != nil {
-			log.Error("failed to decode request body", err)
+			log.Error("failed to decode request body", slog.Any("err", err.Error()))
 
 			render.JSON(w, r, resp.Error("failed to decode request"))
 
@@ -61,7 +61,7 @@ func New(log *slog.Logger, storage UserSaver) http.HandlerFunc {
 
 		if err := validator.New(validator.WithRequiredStructEnabled()).Struct(req); err != nil {
 
-			log.Error("invalid request", err)
+			log.Error("invalid request", slog.Any("err", err.Error()))
 
 			render.JSON(w, r, resp.ValidationError(err.(validator.ValidationErrors)))
 
@@ -77,7 +77,7 @@ func New(log *slog.Logger, storage UserSaver) http.HandlerFunc {
 		id, err := storage.SaveUser(user)
 
 		if err != nil {
-			log.Error("failed to save user", err)
+			log.Error("failed to save user", slog.Any("err", err.Error()))
 
 			render.JSON(w, r, resp.Error("failed to save user"))
 

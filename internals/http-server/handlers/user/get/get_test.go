@@ -7,13 +7,12 @@ import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/require"
-	"log/slog"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 	"user-api-service/internals/http-server/handlers/user/get"
 	"user-api-service/internals/http-server/handlers/user/get/mocks"
+	"user-api-service/internals/lib/logger/slogdiscard"
 	"user-api-service/internals/models"
 )
 
@@ -58,8 +57,7 @@ func TestUpdateHandler(t *testing.T) {
 					Return(tc.user, nil).
 					Once()
 			}
-			log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
-			handler := get.New(log, userGetterMock)
+			handler := get.New(slogdiscard.NewDiscardLogger(), userGetterMock)
 
 			url := fmt.Sprintf("/user/%s", tc.id)
 

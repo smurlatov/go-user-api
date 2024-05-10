@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	host = "localhost:8090"
+	host = ":8080"
 )
 
 func TestPositiveCase(t *testing.T) {

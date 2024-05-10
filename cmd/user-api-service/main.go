@@ -23,7 +23,7 @@ func main() {
 	// connect postgres
 	db, err := postgres.Connect(cfg.Database)
 	if err != nil {
-		log.Error("failed to init storage", err)
+		log.Error("failed to init storage", slog.Any("err", err.Error()))
 		os.Exit(1)
 	}
 	defer db.Close()

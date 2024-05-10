@@ -51,7 +51,7 @@ func New(log *slog.Logger, storage UserUpdater) http.HandlerFunc {
 			return
 		}
 		if err != nil {
-			log.Error("failed to decode request body", err)
+			log.Error("failed to decode request body", slog.Any("err", err.Error()))
 
 			render.JSON(w, r, resp.Error("failed to decode request"))
 
@@ -62,7 +62,7 @@ func New(log *slog.Logger, storage UserUpdater) http.HandlerFunc {
 
 		if err := validator.New(validator.WithRequiredStructEnabled()).Struct(req); err != nil {
 
-			log.Error("invalid request", err)
+			log.Error("invalid request")
 
 			render.JSON(w, r, resp.ValidationError(err.(validator.ValidationErrors)))
 
@@ -73,7 +73,7 @@ func New(log *slog.Logger, storage UserUpdater) http.HandlerFunc {
 
 		if err := validator.New(validator.WithRequiredStructEnabled()).Var(id, "uuid"); err != nil {
 
-			log.Error("id validation error ", err)
+			log.Error("id validation error ", slog.Any("err", err.Error()))
 
 			render.JSON(w, r, resp.Error("invalid uuid"))
 
@@ -90,7 +90,7 @@ func New(log *slog.Logger, storage UserUpdater) http.HandlerFunc {
 		err = storage.UpdateUser(user, id)
 
 		if err != nil {
-			log.Error("failed to update user", err)
+			log.Error("failed to update user", slog.Any("err", err.Error()))
 
 			render.JSON(w, r, resp.Error("failed to update user"))
 

@@ -36,7 +36,7 @@ func New(log *slog.Logger, storage UserGetter) http.HandlerFunc {
 
 		if err := validator.New(validator.WithRequiredStructEnabled()).Var(id, "uuid"); err != nil {
 
-			log.Error("invalid uuid", err)
+			log.Error("invalid uuid", slog.Any("err", err.Error()))
 
 			render.JSON(w, r, resp.Error("invalid uuid"))
 
@@ -46,7 +46,7 @@ func New(log *slog.Logger, storage UserGetter) http.HandlerFunc {
 		user, err := storage.GetUser(id)
 
 		if err != nil {
-			log.Error("failed to get user", err)
+			log.Error("failed to get user", slog.Any("err", err.Error()))
 
 			render.JSON(w, r, resp.Error("failed to get user"))
 			return
